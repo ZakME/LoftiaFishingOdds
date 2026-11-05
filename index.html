@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loftia fishing spots: what's in the water</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --pond: #0F3A40;
+    --deep: #0A2A2F;
+    --paper: #E3ECE8;
+    --paper-2: #D3E0DA;
+    --line: #B5C8C0;
+    --muted: #4F6A68;
+    /* tier accents, taken from each effect's in-game wave colour, deepened for text on paper */
+    --common: #4E6A80;
+    --uncommon: #2C7F8E;
+    --rare: #7A4F86;
+    --ore: #857227;
+    --display: "Big Shoulders Display", "Arial Narrow", sans-serif;
+    --body: "Atkinson Hyperlegible", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--paper); }
+  body {
+    margin: 0; color: var(--pond); font: 16px/1.5 var(--body);
+    background:
+      radial-gradient(1200px 500px at 85% -10%, #cfe0d9 0%, transparent 60%),
+      var(--paper);
+  }
+  .wrap { max-width: 1520px; margin: 0 auto; padding: 0 28px 80px; }
+
+  /* hero */
+  header.hero {
+    background: var(--deep); color: var(--paper);
+    padding: 56px 0 44px; margin-bottom: 40px;
+  }
+  .hero .wrap { padding-bottom: 0; }
+  .eyebrow { font: 600 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: #8FB3AE; }
+  h1 {
+    font: 900 clamp(56px, 9vw, 128px)/.86 var(--display); letter-spacing: -.01em;
+    text-transform: uppercase; margin: 14px 0 18px;
+  }
+  .lede { max-width: 640px; font-size: 18px; color: #C9DBD6; margin: 0 0 36px; }
+
+  .tiers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .tier-card {
+    background: #0E353B; border: 1px solid #1d4a50; border-radius: 14px;
+    padding: 18px 18px 20px; display: grid; grid-template-columns: 112px 1fr; gap: 16px; align-items: center;
+  }
+  .tier-card h2 { font: 800 30px/1 var(--display); text-transform: uppercase; margin: 0 0 6px; letter-spacing: .01em; }
+  .tier-card[data-tier="Common"] h2 { color: #A9BCCB; }
+  .tier-card[data-tier="Uncommon"] h2 { color: #FFFFFF; }
+  .tier-card[data-tier="Rare"] h2 { color: #D3B5DB; }
+  .tier-card[data-tier="Ore"] h2 { color: #D9CF8E; }
+  .tier-card p { margin: 0; font-size: 14px; color: #BFD3CE; }
+  .tier-card .cap { margin-top: 8px; font: 12px/1.3 var(--mono); color: #7FA39E; }
+
+  /* outcome key */
+  .key { display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: baseline; margin: 0 0 22px; }
+  .key h3 { font: 800 22px/1 var(--display); text-transform: uppercase; margin: 0; }
+  .key span { font-size: 15px; }
+  .key b { font: 600 13px/1 var(--mono); text-transform: uppercase; letter-spacing: .06em; margin-right: 6px; }
+
+  /* item picker */
+  .picker { background: #EDF3F0; border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px 20px; margin-bottom: 22px; }
+  .picker-head { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: baseline; margin-bottom: 14px; }
+  .picker-head h3 { font: 800 22px/1 var(--display); text-transform: uppercase; margin: 0; }
+  .found { font: 14px var(--mono); color: var(--muted); }
+  .clear {
+    margin-left: auto; font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: .08em;
+    background: none; border: 1.5px solid var(--line); border-radius: 999px; padding: 7px 14px; color: var(--pond); cursor: pointer;
+  }
+  .clear[hidden] { display: none; }
+  .chipgroup { display: grid; grid-template-columns: 70px 1fr; gap: 10px; align-items: start; }
+  .chipgroup + .chipgroup { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+  .chipgroup h4 { margin: 7px 0 0; font: 600 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+    font: 14px/1 var(--body); color: var(--pond); background: #F8FBFA;
+    border: 1.5px solid var(--line); border-radius: 999px; padding: 6px 11px 6px 12px;
+    transition: background-color .15s, border-color .15s;
+  }
+  .chip:hover { border-color: var(--muted); }
+  .chip[aria-pressed="true"] { background: var(--hl); border-color: var(--pond); font-weight: 700; }
+  .chip .dots { display: inline-flex; gap: 2px; }
+  .chip .dots i { width: 6px; height: 6px; border-radius: 50%; }
+  button:focus-visible, summary:focus-visible { outline: 3px solid var(--uncommon); outline-offset: 2px; }
+
+  /* the chart */
+  .chart {
+    display: grid; grid-template-columns: 180px repeat(3, minmax(230px, 1fr)) minmax(190px, .75fr);
+    border-top: 2px solid var(--pond);
+  }
+  .colhead {
+    position: sticky; top: 0; z-index: 2; background: var(--paper);
+    display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line);
+    font: 800 24px/1 var(--display); text-transform: uppercase;
+  }
+  .colhead svg { width: 34px; height: 34px; flex: none; }
+  .colhead[data-tier="Common"] { color: var(--common); }
+  .colhead[data-tier="Uncommon"] { color: var(--uncommon); }
+  .colhead[data-tier="Rare"] { color: var(--rare); }
+  .colhead[data-tier="Ore"] { color: var(--ore); }
+  .biome {
+    padding: 18px 14px; border-bottom: 1px solid var(--line);
+    font: 900 28px/.92 var(--display); text-transform: uppercase; letter-spacing: .01em; overflow-wrap: break-word;
+  }
+  .biome small { display: block; margin-top: 8px; font: 12px/1.3 var(--mono); text-transform: none; letter-spacing: 0; color: var(--muted); }
+  .cell, .tier-card > div, .biome { min-width: 0; }
+  .cell { padding: 14px; border-bottom: 1px solid var(--line); border-left: 1px solid var(--line); transition: opacity .2s; }
+  .cell.empty { display: flex; align-items: center; justify-content: center; color: var(--line); font: 13px var(--mono); }
+  .cell .tierlabel { display: none; font: 800 18px/1 var(--display); text-transform: uppercase; margin-bottom: 8px; }
+  .cell[data-tier="Common"] { --acc: var(--common); }
+  .cell[data-tier="Uncommon"] { --acc: var(--uncommon); }
+  .cell[data-tier="Rare"] { --acc: var(--rare); }
+  .cell[data-tier="Ore"] { --acc: var(--ore); }
+  .cell .tierlabel { color: var(--acc); }
+
+  .out + .out { margin-top: 12px; }
+  .out h4 {
+    margin: 0 0 5px; display: flex; justify-content: space-between; align-items: baseline;
+    font: 600 11px/1 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted);
+  }
+  .bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--paper-2); }
+  .seg { height: 100%; }
+  .seg + .seg { box-shadow: inset 2px 0 0 var(--paper); }
+  .seg.x2 { background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.38) 0 3px, transparent 3px 7px); }
+  .rows { list-style: none; margin: 6px 0 0; padding: 0; font-size: 14px; line-height: 1.35; }
+  .rows li { display: grid; grid-template-columns: 12px 40px 1fr; gap: 6px; align-items: baseline; padding: 1px 0; border-radius: 4px; }
+  .rows .sw { width: 10px; height: 10px; border-radius: 3px; align-self: center; }
+  .rows .sw.x2 { background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.5) 0 2px, transparent 2px 4px); }
+  .rows .pc { font: 600 13px var(--mono); text-align: right; }
+  .rows .q { font: 13px var(--mono); color: var(--muted); }
+  .out.miss .rows { color: var(--muted); }
+
+  /* selection */
+  .chart.picking .cell:not(.hit), .chart.picking .biome:not(.hit), .chart.picking .colhead[data-tier]:not(.hit) { opacity: .22; }
+  .chart.picking .cell.hit { background: #F4F8F6; }
+  .rows li.hit { background: var(--hl); box-shadow: 0 0 0 3px var(--hl); font-weight: 700; color: var(--pond); }
+
+  /* notes */
+  .notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 44px; }
+  .notes h3 { font: 800 24px/1 var(--display); text-transform: uppercase; margin: 0 0 10px; }
+  .notes p, .notes li { font-size: 15px; }
+  .notes ul { padding-left: 18px; margin: 0; }
+  .notes table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  .notes td, .notes th { text-align: left; padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .notes th { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  details { margin-top: 36px; border-top: 2px solid var(--pond); padding-top: 14px; }
+  summary { cursor: pointer; font: 800 22px/1 var(--display); text-transform: uppercase; }
+  .raw { overflow-x: auto; margin-top: 14px; }
+  .raw table { border-collapse: collapse; font: 13px var(--mono); }
+  .raw td, .raw th { padding: 5px 14px 5px 0; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  .raw .on { font-weight: 600; }
+  .raw .off { color: #9AB0AA; }
+  footer { margin-top: 40px; font: 12px var(--mono); color: var(--muted); }
+
+  /* glyph motion */
+  .ring { transform-origin: 50px 50px; animation: ripple 3.6s ease-out infinite; }
+  .spark { transform-box: fill-box; transform-origin: center; animation: twinkle 1.8s ease-in-out infinite; }
+  .bub { animation: rise 2.8s ease-in infinite; }
+  .drop { transform-box: fill-box; transform-origin: center bottom; animation: splash 1.4s ease-out infinite; }
+  .fish { transform-origin: 50px 50px; animation: swim 9s linear infinite; }
+  .frenzy { animation-duration: 3.2s; }
+  @keyframes ripple { 0% { transform: scale(.35); opacity: .95; } 100% { transform: scale(1.12); opacity: 0; } }
+  @keyframes twinkle { 0%, 100% { transform: scale(.2); opacity: 0; } 50% { transform: scale(1); opacity: 1; } }
+  @keyframes rise { 0% { transform: translateY(6px); opacity: 0; } 25% { opacity: .9; } 100% { transform: translateY(-22px); opacity: 0; } }
+  @keyframes splash { 0% { transform: translateY(4px) scale(.4); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-14px) scale(1); opacity: 0; } }
+  @keyframes swim { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .ring, .spark, .bub, .drop, .fish { animation: none; }
+    .ring { opacity: .7; }
+  }
+
+  @media (max-width: 1180px) {
+    .tiers { grid-template-columns: repeat(2, 1fr); }
+    .notes { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 1120px) {
+    .chart { grid-template-columns: 1fr; border-top: 0; }
+    .colhead, .cell.empty { display: none; }
+    .biome { border-top: 2px solid var(--pond); border-bottom: 0; padding-left: 0; }
+    .cell { border-left: 0; padding-left: 0; }
+    .cell .tierlabel { display: block; }
+  }
+  @media (max-width: 620px) {
+    .wrap { padding: 0 16px 60px; }
+    .tiers { grid-template-columns: 1fr; }
+    .tier-card { grid-template-columns: 88px 1fr; }
+    .chipgroup { grid-template-columns: 1fr; }
+    .clear { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Loftia · Hanging Gardens fishing spots · read from game data</div>
+    <h1>What's in<br>the water</h1>
+    <p class="lede">Every fishing spot has a fixed tier, and its tier shows on the surface. Read the effect, then check the chart below to see what each catch can give you.</p>
+    <div class="tiers" id="tiers"></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="key">
+    <h3>Your catch decides the list</h3>
+    <span><b>Miss</b>junk: algae, or salt in caves</span>
+    <span><b>Catch</b>the spot's fish list</span>
+    <span><b>Perfect</b>the critical list, always ×2</span>
+  </div>
+
+  <section class="picker" aria-labelledby="pick-h">
+    <div class="picker-head">
+      <h3 id="pick-h">Pick what you're after</h3>
+      <span class="found" id="found" aria-live="polite">Select one or more to see where they drop. Dots show the spot tiers each one comes from.</span>
+      <button type="button" class="clear" id="clear" hidden>Clear selection</button>
+    </div>
+    <div id="chips"></div>
+  </section>
+
+  <div class="chart" id="chart"></div>
+
+  <section class="notes">
+    <div>
+      <h3>How the odds work</h3>
+      <ul>
+        <li>Each list rolls once. Percentages are each entry's weight out of the list's total.</li>
+        <li>Striped bars give two of the item.</li>
+        <li>Pairs like “Atlantic Salmon / Sturgeon” are one entry with several fish. The data doesn't say how the game picks between them.</li>
+        <li>Every catch also gets separate bonus rolls for district coordinates, cosmetics and adventure nodes.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Spot facts</h3>
+      <ul>
+        <li>Spots respawn 30 seconds after they're fished.</li>
+        <li>Rare spots are capped at 3 per spawn group, every other tier at 5. Within a group each tier has the same spawn weight.</li>
+        <li>Rare spots show the game's “Unique” effect. The separate “Rare” effect isn't used by any spot.</li>
+        <li>Ore spots only appear in caves.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Quest spots</h3>
+      <table id="quest"><tr><th>Spot</th><th>Miss</th><th>Catch</th><th>Perfect</th></tr></table>
+    </div>
+  </section>
+
+  <details>
+    <summary>Effect settings per tier</summary>
+    <div class="raw" id="raw"></div>
+  </details>
+
+  <footer>Data read live from the Loftia client on 2026-11-04 (ForageSpotDefinition reward configs and the NS_FishingSpot user parameters). Item names are the in-game display names. Area names are the world map regions, matched to each spot by its position. It can change with game updates.</footer>
+</main>
+
+<script>
+const DATA = [{"id":"ItemConfig.FishingSpot.Lake.Common","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics","Reward.ExtraDrops.Adventures.Nodes"],"basic":[{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":6,"chance":1.0,"items":["Fishing.AllisShad"],"min":1,"max":1},{"w":2,"chance":1.0,"items":["Fishing.AllisShad"],"min":2,"max":2},{"w":1,"chance":1.0,"items":["Fishing.SeventyfourSeabream"],"min":1,"max":1}],"crit":[{"w":3,"chance":1.0,"items":["Fishing.AllisShad"],"min":2,"max":2},{"w":1,"chance":1.0,"items":["Fishing.SeventyfourSeabream"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Lake.Uncommon","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics","Reward.ExtraDrops.Adventures.Nodes"],"basic":[{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":6,"chance":1.0,"items":["Fishing.AtlanticSalmon","Fishing.AtlanticSturgeon"],"min":1,"max":1},{"w":2,"chance":1.0,"items":["Fishing.AtlanticSalmon","Fishing.AtlanticSturgeon"],"min":2,"max":2},{"w":1,"chance":1.0,"items":["Fishing.NassauGrouper","Fishing.GiantSeaBass"],"min":1,"max":1}],"crit":[{"w":3,"chance":1.0,"items":["Fishing.AtlanticSalmon","Fishing.AtlanticSturgeon","Fishing.RainbowTrout"],"min":2,"max":2},{"w":1,"chance":1.0,"items":["Fishing.NassauGrouper","Fishing.GiantSeaBass"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Lake.Rare","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":3,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics","Reward.ExtraDrops.Adventures.Nodes"],"basic":[{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":6,"chance":1.0,"items":["Fishing.RainbowTrout"],"min":1,"max":1},{"w":2,"chance":1.0,"items":["Fishing.RainbowTrout"],"min":2,"max":2},{"w":1,"chance":1.0,"items":["Fishing.SouthernBluefinTuna"],"min":1,"max":1}],"crit":[{"w":3,"chance":1.0,"items":["Fishing.RainbowTrout"],"min":2,"max":2},{"w":1,"chance":1.0,"items":["Fishing.SouthernBluefinTuna"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.DeepLake.Common","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics","Reward.ExtraDrops.Adventures.Nodes"],"basic":[{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":6,"chance":1.0,"items":["Fishing.SeventyfourSeabream"],"min":1,"max":1},{"w":2,"chance":1.0,"items":["Fishing.SeventyfourSeabream"],"min":2,"max":2},{"w":1,"chance":1.0,"items":["Fishing.AllisShad"],"min":1,"max":1}],"crit":[{"w":3,"chance":1.0,"items":["Fishing.SeventyfourSeabream"],"min":2,"max":2},{"w":1,"chance":1.0,"items":["Fishing.AllisShad"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.DeepLake.Uncommon","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics","Reward.ExtraDrops.Adventures.Nodes"],"basic":[{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":6,"chance":1.0,"items":["Fishing.NassauGrouper","Fishing.GiantSeaBass"],"min":1,"max":1},{"w":2,"chance":1.0,"items":["Fishing.NassauGrouper","Fishing.GiantSeaBass"],"min":2,"max":2},{"w":1,"chance":1.0,"items":["Fishing.AtlanticSalmon","Fishing.AtlanticSturgeon"],"min":1,"max":1}],"crit":[{"w":3,"chance":1.0,"items":["Fishing.NassauGrouper","Fishing.GiantSeaBass","Fishing.SouthernBluefinTuna"],"min":2,"max":2},{"w":1,"chance":1.0,"items":["Fishing.AtlanticSalmon","Fishing.AtlanticSturgeon"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.DeepLake.Rare","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":3,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics","Reward.ExtraDrops.Adventures.Nodes"],"basic":[{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":6,"chance":1.0,"items":["Fishing.SouthernBluefinTuna"],"min":1,"max":1},{"w":2,"chance":1.0,"items":["Fishing.SouthernBluefinTuna"],"min":2,"max":2},{"w":1,"chance":1.0,"items":["Fishing.RainbowTrout"],"min":1,"max":1}],"crit":[{"w":3,"chance":1.0,"items":["Fishing.SouthernBluefinTuna"],"min":2,"max":2},{"w":1,"chance":1.0,"items":["Fishing.RainbowTrout"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Forest.Common","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":3,"chance":1.0,"items":["Fishing.SpringPygmySunfish"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Fishing.SpringPygmySunfish"],"min":2,"max":2}],"crit":[{"w":1,"chance":1.0,"items":["Fishing.SpringPygmySunfish"],"min":2,"max":2},{"w":1,"chance":1.0,"items":["Cooking.Ingredients.Salt","Fishing.HadithaCavefish"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Forest.Uncommon","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":3,"chance":1.0,"items":["Fishing.DalhousieCatfish","Fishing.MoapaDace"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Fishing.DalhousieCatfish","Fishing.MoapaDace"],"min":2,"max":2}],"crit":[{"w":1,"chance":1.0,"items":["Fishing.DalhousieCatfish","Fishing.MoapaDace","Fishing.RedHandfish"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Forest.Rare","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":3,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":3,"chance":1.0,"items":["Fishing.RedHandfish"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Fishing.RedHandfish"],"min":2,"max":2}],"crit":[{"w":1,"chance":1.0,"items":["Fishing.RedHandfish"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Cave.Common","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":3,"chance":1.0,"items":["Cooking.Ingredients.Salt"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Cooking.Ingredients.Salt"],"min":2,"max":2}],"good":[{"w":3,"chance":1.0,"items":["Fishing.HadithaCavefish"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Fishing.HadithaCavefish"],"min":2,"max":2}],"crit":[{"w":1,"chance":1.0,"items":["Fishing.HadithaCavefish"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Cave.Uncommon","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":3,"chance":1.0,"items":["Cooking.Ingredients.Salt"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Cooking.Ingredients.Salt"],"min":2,"max":2}],"good":[{"w":3,"chance":1.0,"items":["Fishing.BlindCaveEel","Fishing.TexasBlindSalamander"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Fishing.BlindCaveEel","Fishing.TexasBlindSalamander"],"min":2,"max":2}],"crit":[{"w":1,"chance":1.0,"items":["Fishing.BlindCaveEel","Fishing.TexasBlindSalamander","Fishing.BlindCaveBrotula"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Cave.Rare","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":3,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":1,"chance":1.0,"items":["Cooking.Ingredients.Salt"],"min":1,"max":1},{"w":3,"chance":1.0,"items":["Cooking.Ingredients.Salt"],"min":2,"max":2}],"good":[{"w":3,"chance":1.0,"items":["Fishing.BlindCaveBrotula"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Fishing.BlindCaveBrotula"],"min":2,"max":2}],"crit":[{"w":1,"chance":1.0,"items":["Fishing.BlindCaveBrotula"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Cave.Ore","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":3,"chance":1.0,"items":["Cooking.Ingredients.Salt"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Cooking.Ingredients.Salt"],"min":2,"max":2}],"good":[{"w":3,"chance":1.0,"items":["Mining.BauxiteOre","Mining.CopperOre"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Mining.BauxiteOre","Mining.CopperOre"],"min":2,"max":2}],"crit":[{"w":1,"chance":1.0,"items":["Mining.BauxiteOre","Mining.CopperOre"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.FloatingVillage.Common","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":1,"chance":1.0,"items":["Fishing.AllisShad"],"min":1,"max":1}],"crit":[{"w":1,"chance":1.0,"items":["Fishing.AllisShad"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.FloatingVillage.Uncommon","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":1,"chance":1.0,"items":["Fishing.AtlanticSalmon"],"min":1,"max":1}],"crit":[{"w":1,"chance":1.0,"items":["Fishing.AtlanticSalmon"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.FloatingVillage.Rare","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":3,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":3,"chance":1.0,"items":["Fishing.AtlanticSturgeon"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Fishing.AtlanticSturgeon"],"min":2,"max":2}],"crit":[{"w":1,"chance":1.0,"items":["Fishing.AtlanticSturgeon"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Grove.Common","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":3,"chance":1.0,"items":["Fishing.SpikySeaCucumber"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Fishing.SpikySeaCucumber"],"min":2,"max":2}],"crit":[{"w":3,"chance":1.0,"items":["Fishing.SpikySeaCucumber"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Grove.Uncommon","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":3,"chance":1.0,"items":["Fishing.BahiaBrainCoral","Fishing.IvelisSeaAnemone"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Fishing.BahiaBrainCoral","Fishing.IvelisSeaAnemone"],"min":2,"max":2}],"crit":[{"w":1,"chance":1.0,"items":["Fishing.BahiaBrainCoral","Fishing.IvelisSeaAnemone","Fishing.SunflowerSeaStar"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Grove.Rare","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":3,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":3,"chance":1.0,"items":["Fishing.SunflowerSeaStar"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Fishing.SunflowerSeaStar"],"min":2,"max":2}],"crit":[{"w":3,"chance":1.0,"items":["Fishing.SunflowerSeaStar"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Quest.HomeIsWhereTheLeakIs","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":0,"count":1,"extra":[],"basic":[{"w":1000,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1}],"good":[{"w":1000,"chance":1.0,"items":["Fishing.SewerAlgae"],"min":1,"max":1}],"crit":[{"w":1000,"chance":1.0,"items":["Fishing.SewerAlgae"],"min":1,"max":1}]},{"id":"ItemConfig.FishingSpot.Quest.BlindDate","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":0,"count":1,"extra":[],"basic":[],"good":[{"w":1000,"chance":1.0,"items":["Fishing.GarbagePile"],"min":1,"max":1}],"crit":[{"w":1000,"chance":1.0,"items":["Fishing.GarbagePile"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Hills.Common","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":3,"chance":1.0,"items":["Fishing.CorroboreeFrog"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Fishing.CorroboreeFrog"],"min":2,"max":2}],"crit":[{"w":3,"chance":1.0,"items":["Fishing.CorroboreeFrog"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Hills.Uncommon","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":3,"chance":1.0,"items":["Fishing.GreenTurtle","Fishing.HawksbillTurtle"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Fishing.GreenTurtle","Fishing.HawksbillTurtle"],"min":2,"max":2}],"crit":[{"w":1,"chance":1.0,"items":["Fishing.GreenTurtle","Fishing.HawksbillTurtle","Fishing.SplendidPoisonFrog"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Hills.Rare","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":3,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":3,"chance":1.0,"items":["Fishing.SplendidPoisonFrog"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Fishing.SplendidPoisonFrog"],"min":2,"max":2}],"crit":[{"w":3,"chance":1.0,"items":["Fishing.SplendidPoisonFrog"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Bamboo.Common","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":3,"chance":1.0,"items":["Fishing.EuropeanMudminnow"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Fishing.EuropeanMudminnow"],"min":2,"max":2}],"crit":[{"w":1,"chance":1.0,"items":["Fishing.EuropeanMudminnow"],"min":2,"max":2},{"w":1,"chance":1.0,"items":["Cooking.Ingredients.Salt","Fishing.HadithaCavefish"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Bamboo.Uncommon","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":5,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":3,"chance":1.0,"items":["Fishing.BiaGoby","Fishing.SplendidToadfish"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Fishing.BiaGoby","Fishing.SplendidToadfish"],"min":2,"max":2}],"crit":[{"w":1,"chance":1.0,"items":["Fishing.BiaGoby","Fishing.SplendidToadfish","Fishing.LeafySeaDragon"],"min":2,"max":2}]},{"id":"ItemConfig.FishingSpot.Bamboo.Rare","spawnChance":1.0,"respawn":30.0,"groupWeight":1,"maxInGroup":3,"weighted":1,"count":1,"extra":["Reward.ExtraDrops.Districts.Coordinates","Reward.ExtraDrops.Districts.Cosmetics"],"basic":[{"w":1,"chance":1.0,"items":["Foraging.Algae"],"min":1,"max":1},{"w":3,"chance":1.0,"items":["Foraging.Algae"],"min":2,"max":2}],"good":[{"w":3,"chance":1.0,"items":["Fishing.LeafySeaDragon"],"min":1,"max":1},{"w":1,"chance":1.0,"items":["Fishing.LeafySeaDragon"],"min":2,"max":2}],"crit":[{"w":1,"chance":1.0,"items":["Fishing.LeafySeaDragon"],"min":2,"max":2}]}];
+
+// effect user parameters from each visuals class (bools: true = on)
+const FX = {
+  Common:   { cls: "Common",   radius: 120, waveThickness: .1, waveBlur: .2,  waveAmount: 1.1,  waveColor: "#8196A8", fish: true,  fishScale: .2,  fishRate: .7,  frenzy: false, bubbles: false, bubbleColor: "#BBDFF7", sparkles: false, sparkleRate: 1.5,  splash: false, splashRate: 0,  splashProb: 0 },
+  Uncommon: { cls: "Uncommon", radius: 120, waveThickness: .5, waveBlur: .6,  waveAmount: 1.2,  waveColor: "#8196A8", fish: true,  fishScale: .35, fishRate: .8,  frenzy: false, bubbles: false, bubbleColor: "#FFFFFF", sparkles: false, sparkleRate: .25,  splash: true,  splashRate: 24, splashProb: 1 },
+  Rare:     { cls: "Unique",   radius: 100, waveThickness: .6, waveBlur: 1,   waveAmount: 1.25, waveColor: "#907594", fish: true,  fishScale: .6,  fishRate: .75, frenzy: true,  bubbles: true,  bubbleColor: "#BBF4DF", sparkles: true,  sparkleRate: 2.5,  splash: true,  splashRate: 24, splashProb: 1 },
+  Ore:      { cls: "Ore",      radius: 100, waveThickness: .2, waveBlur: .2,  waveAmount: .9,   waveColor: "#A8A681", fish: false, fishScale: .2,  fishRate: .5,  frenzy: false, bubbles: false, bubbleColor: "#D2F4BB", sparkles: true,  sparkleRate: 3,    splash: false, splashRate: 0,  splashProb: 0 },
+};
+// the unused "Rare" visual, for the settings table only
+const FX_UNUSED_RARE = { cls: "Rare (unused)", radius: 120, waveThickness: .6, waveBlur: .85, waveAmount: 1.5, waveColor: "#8196A8", fish: true, fishScale: .7, fishRate: .3, frenzy: true, bubbles: true, bubbleColor: "#BBDFF7", sparkles: false, sparkleRate: 1.5, splash: true, splashRate: 12, splashProb: .4 };
+
+const TIERS = ["Common", "Uncommon", "Rare", "Ore"];
+const BIOMES = ["Lake", "DeepLake", "FloatingVillage", "Forest", "Grove", "Bamboo", "Hills", "Cave"];
+// in-game area (world map region) for each internal spot group, matched by spot position in Hanging Gardens
+const BIOME_NAME = {
+  Lake: ["Central Lake", "Lake spots. Also around Lower Village"],
+  DeepLake: ["Central Lake", "Deep Lake spots. Also around Upper Village"],
+  FloatingVillage: ["Floating Village", "Floating Village spots"],
+  Forest: ["Overgrowth", "Forest spots, in the Deep Forest"],
+  Grove: ["The Grove", "Grove spots, by The Tree and Waterfall Cave"],
+  Bamboo: ["Bamboo Forest", "Bamboo spots"],
+  Hills: ["Hills", "Not in Hanging Gardens. Area not confirmed"],
+  Cave: ["Secret Lake", "Cave spots, in the Secret Cave"],
+};
+// item display names as the game shows them
+const GAME_NAMES = {
+  "Cooking.Ingredients.Salt": "Salt", "Foraging.Algae": "Algae", "Mining.BauxiteOre": "Bauxite Ore", "Mining.CopperOre": "Copper Scraps",
+  "Fishing.AllisShad": "Allis Shad", "Fishing.AtlanticSalmon": "Atlantic Salmon", "Fishing.AtlanticSturgeon": "Atlantic Sturgeon",
+  "Fishing.BahiaBrainCoral": "Bahia Brain Coral", "Fishing.BiaGoby": "Bia Goby", "Fishing.BlindCaveBrotula": "Blind Cave Brotula",
+  "Fishing.BlindCaveEel": "Blind Cave Eel", "Fishing.CorroboreeFrog": "Corroboree Frog", "Fishing.DalhousieCatfish": "Dalhousie Catfish",
+  "Fishing.EuropeanMudminnow": "European Mudminnow", "Fishing.GarbagePile": "Garbage Ball", "Fishing.GiantSeaBass": "Giant Sea Bass",
+  "Fishing.GreenTurtle": "Green Turtle", "Fishing.HadithaCavefish": "Haditha Cavefish", "Fishing.HawksbillTurtle": "Hawksbill Turtle",
+  "Fishing.IvelisSeaAnemone": "Ivell's Sea Anemone", "Fishing.LeafySeaDragon": "Leafy Sea Dragon", "Fishing.MoapaDace": "Moapa Dace",
+  "Fishing.NassauGrouper": "Nassau Grouper", "Fishing.RainbowTrout": "Rainbow Trout", "Fishing.RedHandfish": "Red Handfish",
+  "Fishing.SeventyfourSeabream": "Seventyfour Seabream", "Fishing.SewerAlgae": "Sewer Algae", "Fishing.SouthernBluefinTuna": "Southern Bluefin Tuna",
+  "Fishing.SpikySeaCucumber": "Japanese Spiky Sea Cucumber", "Fishing.SplendidPoisonFrog": "Splendid Poison Frog",
+  "Fishing.SplendidToadfish": "Splendid Toadfish", "Fishing.SpringPygmySunfish": "Spring Pygmy Sunfish",
+  "Fishing.SunflowerSeaStar": "Sunflower Sea Star", "Fishing.TexasBlindSalamander": "Texas Blind Salamander",
+};
+const itemName = t => GAME_NAMES[t] || pretty(t);
+const TELLS = {
+  Common: "Plain thin ripples and a small fish shadow. Nothing breaks the surface.",
+  Uncommon: "Thicker ripples and constant splashing. No sparkles.",
+  Rare: "Sparkles, rising bubbles and splashing over a big frenzied fish shadow.",
+  Ore: "Sparkles but no fish. Yellow-tinted ripples. Caves only.",
+};
+const ACCENT = { Common: "#4E6A80", Uncommon: "#2C7F8E", Rare: "#7A4F86", Ore: "#857227" };
+
+const pretty = t => t.replace(/^.*\./, "").replace(/([a-z])([A-Z])/g, "$1 $2");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+// tier glyph, drawn from the effect settings above
+function glyph(tier, idSuffix) {
+  const f = FX[tier];
+  const rings = Math.round(f.waveAmount * 2.4);
+  let s = `<svg viewBox="0 0 100 100" role="img" aria-label="${tier} spot effect">`;
+  s += `<defs><radialGradient id="w${idSuffix}" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#174A51"/><stop offset="1" stop-color="#082429"/></radialGradient>`;
+  s += `<filter id="b${idSuffix}"><feGaussianBlur stdDeviation="${(f.waveBlur * 1.1).toFixed(2)}"/></filter></defs>`;
+  s += `<circle cx="50" cy="50" r="49" fill="url(#w${idSuffix})"/>`;
+  if (f.fish) {
+    const n = f.frenzy ? 3 : 1;
+    for (let i = 0; i < n; i++) {
+      const rx = 7 + f.fishScale * 16, ry = rx * .42;
+      s += `<g class="fish${f.frenzy ? " frenzy" : ""}" style="animation-delay:${-i * 1.1}s"><ellipse cx="${50 + 10 + i * 3}" cy="${44 + i * 6}" rx="${rx}" ry="${ry}" fill="#B4ACCA" opacity=".42" transform="rotate(${i * 120} 50 50)"/></g>`;
+    }
+  }
+  for (let i = 0; i < rings; i++) {
+    s += `<circle class="ring" style="animation-delay:${(-i * 3.6 / rings).toFixed(2)}s" cx="50" cy="50" r="40" fill="none" stroke="${f.waveColor}" stroke-width="${(1 + f.waveThickness * 5).toFixed(2)}" filter="url(#b${idSuffix})"/>`;
+  }
+  if (f.splash) {
+    const drops = [[38, 40], [62, 38], [50, 33], [44, 58], [58, 60]];
+    drops.forEach(([x, y], i) => { s += `<circle class="drop" style="animation-delay:${(i * .27).toFixed(2)}s" cx="${x}" cy="${y}" r="2.4" fill="#F4FBF9"/>`; });
+  }
+  if (f.bubbles) {
+    [[32, 62], [68, 58], [56, 70], [42, 72]].forEach(([x, y], i) => { s += `<circle class="bub" style="animation-delay:${(i * .7).toFixed(2)}s" cx="${x}" cy="${y}" r="3" fill="none" stroke="${f.bubbleColor}" stroke-width="1.3"/>`; });
+  }
+  if (f.sparkles) {
+    const pts = [[30, 30], [70, 34], [64, 68], [34, 66], [50, 22], [78, 52]];
+    pts.slice(0, Math.round(f.sparkleRate * 1.6)).forEach(([x, y], i) => {
+      s += `<path class="spark" style="animation-delay:${(i * .31).toFixed(2)}s" d="M${x} ${y - 6} L${x + 1.4} ${y - 1.4} L${x + 6} ${y} L${x + 1.4} ${y + 1.4} L${x} ${y + 6} L${x - 1.4} ${y + 1.4} L${x - 6} ${y} L${x - 1.4} ${y - 1.4} Z" fill="#FFF6C9"/>`;
+    });
+  }
+  return s + `</svg>`;
+}
+
+// hero tier cards
+const tiersEl = document.getElementById("tiers");
+TIERS.forEach(t => {
+  const def = DATA.find(d => d.id.endsWith("." + t));
+  const cap = def ? `Up to ${def.maxInGroup} per spawn group` : "";
+  tiersEl.insertAdjacentHTML("beforeend",
+    `<div class="tier-card" data-tier="${t}">${glyph(t, "h" + t)}<div><h2>${t}</h2><p>${TELLS[t]}</p><div class="cap">${cap}</div></div></div>`);
+});
+
+// one outcome block: bar + rows
+function outcome(label, list, acc, cls) {
+  if (!list.length) return `<div class="out ${cls}"><h4><span>${label}</span><span>nothing</span></h4></div>`;
+  const total = list.reduce((a, e) => a + e.w, 0);
+  const keys = [...new Set(list.map(e => e.items.join("|")))];
+  const shade = k => { const i = keys.indexOf(k); return `color-mix(in srgb, ${acc} ${[100, 62, 34][i] ?? 25}%, #E3ECE8)`; };
+  let bar = `<div class="bar" aria-hidden="true">`, rows = `<ul class="rows">`;
+  list.forEach(e => {
+    const pc = e.w / total * 100, k = e.items.join("|"), x2 = e.min >= 2 ? " x2" : "";
+    const qty = e.min === e.max ? `×${e.min}` : `×${e.min}–${e.max}`;
+    const names = e.items.map(itemName).join(" / ");
+    bar += `<div class="seg${x2}" style="width:${pc}%;background-color:${shade(k)}" title="${esc(names)} ${qty}: ${Math.round(pc)}%"></div>`;
+    rows += `<li data-items="${esc(e.items.map(itemName).join("|"))}"><span class="sw${x2}" style="background-color:${shade(k)}"></span><span class="pc">${Math.round(pc)}%</span><span>${esc(names)} <span class="q">${qty}</span></span></li>`;
+  });
+  return `<div class="out ${cls}"><h4><span>${label}</span></h4>${bar}</div>${rows}</ul></div>`;
+}
+
+// chart
+const chart = document.getElementById("chart");
+let html = `<div class="colhead" aria-hidden="true"></div>`;
+TIERS.forEach(t => { html += `<div class="colhead" data-tier="${t}">${glyph(t, "c" + t)}${t}</div>`; });
+BIOMES.forEach(b => {
+  html += `<div class="biome" data-biome="${b}">${BIOME_NAME[b][0]}<small>${BIOME_NAME[b][1]}</small></div>`;
+  TIERS.forEach(t => {
+    const d = DATA.find(x => x.id === `ItemConfig.FishingSpot.${b}.${t}`);
+    if (!d) { html += `<div class="cell empty" data-tier="${t}">${t === "Ore" ? "no ore spots" : "none"}</div>`; return; }
+    const acc = ACCENT[t];
+    html += `<div class="cell" data-tier="${t}" data-biome="${b}"><div class="tierlabel">${t}</div>` +
+      outcome("Miss", d.basic, acc, "miss") + outcome("Catch", d.good, acc, "good") + outcome("Perfect", d.crit, acc, "crit") + `</div>`;
+  });
+});
+chart.innerHTML = html;
+
+// quest spots
+const quest = document.getElementById("quest");
+const qlist = l => l.length ? l.map(e => `${esc(e.items.map(itemName).join(" / "))} ×${e.min}`).join("<br>") : "nothing";
+DATA.filter(d => d.id.includes(".Quest.")).forEach(d => {
+  quest.insertAdjacentHTML("beforeend", `<tr><td>${esc(pretty(d.id))}</td><td>${qlist(d.basic)}</td><td>${qlist(d.good)}</td><td>${qlist(d.crit)}</td></tr>`);
+});
+
+// effect settings table
+const fxRows = [
+  ["Effect used", f => f.cls], ["Radius", f => f.radius], ["Wave thickness", f => f.waveThickness], ["Wave blur", f => f.waveBlur],
+  ["Wave amount", f => f.waveAmount], ["Wave colour", f => `<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${f.waveColor};vertical-align:middle"></span> ${f.waveColor}`],
+  ["Fish shadow", f => f.fish], ["Fish scale", f => f.fishScale], ["Frenzied fish", f => f.frenzy], ["Bubbles", f => f.bubbles],
+  ["Sparkles", f => f.sparkles], ["Sparkle rate", f => f.sparkleRate], ["Splashes", f => f.splash], ["Splash rate", f => f.splashRate], ["Splash chance", f => f.splashProb],
+];
+const cols = [["Common spot", FX.Common], ["Uncommon spot", FX.Uncommon], ["Rare spot", FX.Rare], ["Ore spot", FX.Ore], ["Rare effect (unused)", FX_UNUSED_RARE]];
+let raw = `<table><tr><th></th>${cols.map(c => `<th>${c[0]}</th>`).join("")}</tr>`;
+fxRows.forEach(([n, fn]) => {
+  raw += `<tr><td>${n}</td>${cols.map(c => { const v = fn(c[1]); return typeof v === "boolean" ? `<td class="${v ? "on" : "off"}">${v ? "on" : "off"}</td>` : `<td>${v}</td>`; }).join("")}</tr>`;
+});
+document.getElementById("raw").innerHTML = raw + `</table>`;
+
+// item picker: every item that drops from a regular (non-quest) spot, with the tiers it comes from
+const items = new Map();
+DATA.filter(d => !d.id.includes(".Quest.")).forEach(d => {
+  const tier = d.id.split(".").pop();
+  [d.basic, d.good, d.crit].forEach(l => l.forEach(e => e.items.forEach(tag => {
+    const name = itemName(tag);
+    if (!items.has(name)) items.set(name, { tag, tiers: new Set() });
+    items.get(name).tiers.add(tier);
+  })));
+});
+const GROUPS = [
+  ["Fish", t => t.startsWith("Fishing.")],
+  ["Ores", t => t.startsWith("Mining.")],
+  ["Junk", t => !t.startsWith("Fishing.") && !t.startsWith("Mining.")],
+];
+const chipsEl = document.getElementById("chips");
+GROUPS.forEach(([label, test]) => {
+  const names = [...items.keys()].filter(n => test(items.get(n).tag)).sort();
+  if (!names.length) return;
+  const chips = names.map(n => {
+    const dots = TIERS.filter(t => items.get(n).tiers.has(t)).map(t => `<i style="background:${ACCENT[t]}" title="${t}"></i>`).join("");
+    return `<button type="button" class="chip" aria-pressed="false" data-name="${esc(n)}">${esc(n)}<span class="dots" aria-hidden="true">${dots}</span></button>`;
+  }).join("");
+  chipsEl.insertAdjacentHTML("beforeend", `<div class="chipgroup"><h4>${label}</h4><div class="chips">${chips}</div></div>`);
+});
+
+// each pick gets its own marker colour so several picks stay distinguishable
+const MARKERS = ["#FFE27A", "#A8EFD0", "#F8BFD0", "#BFD3FF", "#FFCB9A", "#D8C3F4", "#C7EC9A", "#9FE3EC"];
+const picked = new Map(); // name -> colour
+const found = document.getElementById("found"), clearBtn = document.getElementById("clear");
+const foundHint = found.textContent;
+
+function nextMarker() {
+  const used = new Set(picked.values());
+  return MARKERS.find(c => !used.has(c)) || MARKERS[picked.size % MARKERS.length];
+}
+
+function applyPicks() {
+  const on = picked.size > 0;
+  chart.classList.toggle("picking", on);
+  clearBtn.hidden = !on;
+  const hitBiomes = new Set(), hitTiers = new Set();
+  let spots = 0;
+  chart.querySelectorAll(".cell:not(.empty)").forEach(c => {
+    let hit = false;
+    c.querySelectorAll(".rows li").forEach(li => {
+      const match = li.dataset.items.split("|").find(n => picked.has(n));
+      li.classList.toggle("hit", !!match);
+      if (match) { li.style.setProperty("--hl", picked.get(match)); hit = true; } else li.style.removeProperty("--hl");
+    });
+    c.classList.toggle("hit", hit);
+    if (hit) { spots++; hitBiomes.add(c.dataset.biome); hitTiers.add(c.dataset.tier); }
+  });
+  chart.querySelectorAll(".biome").forEach(b => b.classList.toggle("hit", hitBiomes.has(b.dataset.biome)));
+  chart.querySelectorAll(".colhead[data-tier]").forEach(h => h.classList.toggle("hit", hitTiers.has(h.dataset.tier)));
+  found.textContent = on ? `${picked.size} selected · drops at ${spots} spot type${spots === 1 ? "" : "s"}` : foundHint;
+}
+
+chipsEl.addEventListener("click", e => {
+  const chip = e.target.closest(".chip");
+  if (!chip) return;
+  const n = chip.dataset.name;
+  if (picked.has(n)) { picked.delete(n); chip.setAttribute("aria-pressed", "false"); chip.style.removeProperty("--hl"); }
+  else { const c = nextMarker(); picked.set(n, c); chip.setAttribute("aria-pressed", "true"); chip.style.setProperty("--hl", c); }
+  applyPicks();
+});
+clearBtn.addEventListener("click", () => {
+  picked.clear();
+  chipsEl.querySelectorAll(".chip").forEach(c => { c.setAttribute("aria-pressed", "false"); c.style.removeProperty("--hl"); });
+  applyPicks();
+});
+</script>
+</body>
+</html>
