@@ -152,6 +152,22 @@
   .notes table { border-collapse: collapse; width: 100%; font-size: 14px; }
   .notes td, .notes th { text-align: left; padding: 4px 8px 4px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
   .notes th { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  /* spawn groups */
+  .spawns { margin-top: 44px; border-top: 2px solid var(--pond); padding-top: 18px; }
+  .spawns h3 { font: 800 24px/1 var(--display); text-transform: uppercase; margin: 0 0 10px; }
+  .spawns-grid { display: grid; grid-template-columns: minmax(280px, 1fr) 2fr; gap: 28px; align-items: start; }
+  .spawns ul { padding-left: 18px; margin: 0; font-size: 15px; }
+  .spawns li + li { margin-top: 6px; }
+  .spawn-table { overflow-x: auto; }
+  .spawn-table table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  .spawn-table th, .spawn-table td { text-align: left; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .spawn-table th { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .spawn-table td.n { font: 600 14px var(--mono); text-align: right; padding-right: 16px; }
+  .spawn-table td.zero { color: #9AB0AA; font-weight: 400; }
+  .spawn-table .sub { display: block; font-size: 12px; color: var(--muted); }
+  .spawn-table tr.area-start td { border-top: 2px solid var(--line); }
+  .bar-rare { display: inline-block; height: 8px; border-radius: 2px; background: var(--rare); vertical-align: middle; margin-right: 6px; }
+  @media (max-width: 1180px) { .spawns-grid { grid-template-columns: 1fr; } }
   details { margin-top: 36px; border-top: 2px solid var(--pond); padding-top: 14px; }
   summary { cursor: pointer; font: 800 22px/1 var(--display); text-transform: uppercase; }
   .raw { overflow-x: auto; margin-top: 14px; }
@@ -242,7 +258,7 @@
       <h3>Spot facts</h3>
       <ul>
         <li>Spots respawn 30 seconds after they're fished.</li>
-        <li>Rare spots are capped at 3 per spawn group, every other tier at 5. Within a group each tier has the same spawn weight.</li>
+        <li>Every spot in the water has a fixed tier. A rare spot only ever comes up as rare. See spawn groups below.</li>
         <li>Rare spots show the game's “Unique” effect. The separate “Rare” effect isn't used by any spot.</li>
         <li>Ore spots only appear in caves.</li>
       </ul>
@@ -253,12 +269,27 @@
     </div>
   </section>
 
+  <section class="spawns" aria-labelledby="spawn-h">
+    <h3 id="spawn-h">Where and when spots come up</h3>
+    <div class="spawns-grid">
+      <ul>
+        <li>Every spot is placed in the world with a fixed tier. A few spots of different tiers sit within 3&nbsp;m of each other, so that patch of water can show either.</li>
+        <li>Spots belong to spawn groups. A group starts empty and switches on one more spot on a timer, until it reaches its max.</li>
+        <li>Each new spot is a random pick from the group. Every tier has the same weight, and a group never has more than 3 rares or 5 of any other tier up at once.</li>
+        <li>A fished spot is gone for 30 seconds, then goes back into the pool. The next spot is a fresh random pick, usually somewhere else.</li>
+        <li>Spawns are per player. Your spots are your own, and other players fishing don't take them.</li>
+        <li>So a group gives you at most one new spot per timer tick. Lake Island refreshes every 15 seconds, and about a third of its spots are rare, so it's the best place in Central Lake to camp for rares.</li>
+      </ul>
+      <div class="spawn-table"><table id="spawn"></table></div>
+    </div>
+  </section>
+
   <details>
     <summary>Effect settings per tier</summary>
     <div class="raw" id="raw"></div>
   </details>
 
-  <footer>Data read live from the Loftia client on 2026-11-11 (ForageSpotDefinition reward configs and the NS_FishingSpot user parameters). Item names are the in-game display names. Area names are the world map regions, matched to each spot by its position. It can change with game updates.</footer>
+  <footer>Data read live from the Loftia client on 2026-11-11 (ForageSpotDefinition reward configs, spawn group settings and the NS_FishingSpot user parameters). Item names are the in-game display names. Area names are the world map regions, matched to each spot by its position. It can change with game updates.</footer>
 </main>
 
 <script>
@@ -389,6 +420,26 @@ BIOMES.forEach(b => {
   });
 });
 chart.innerHTML = html;
+
+// spawn groups: spot counts per tier, timer and cap, read from the game's spawn group settings
+const SPAWN_GROUPS = [{"group":"LakeLower","area":"Central Lake","spots":["Lake"],"every":30,"max":10,"Common":16,"Uncommon":18,"Rare":5,"Ore":0},{"group":"LakeUpper","area":"Central Lake","spots":["DeepLake","Lake"],"every":30,"max":10,"Common":8,"Uncommon":11,"Rare":11,"Ore":0},{"group":"LakeIsland","area":"Central Lake","spots":["DeepLake","Lake"],"every":15,"max":5,"Common":4,"Uncommon":19,"Rare":10,"Ore":0},{"group":"RiverLower","area":"Central Lake","spots":["Lake"],"every":30,"max":4,"Common":0,"Uncommon":6,"Rare":5,"Ore":0},{"group":"RiverUpper","area":"Central Lake","spots":["DeepLake"],"every":30,"max":4,"Common":4,"Uncommon":5,"Rare":7,"Ore":0},{"group":"FloatingVillage","area":"Floating Village","spots":["FloatingVillage"],"every":15,"max":5,"Common":15,"Uncommon":3,"Rare":0,"Ore":0},{"group":"ForestPond","area":"Overgrowth","spots":["Forest"],"every":20,"max":3,"Common":4,"Uncommon":3,"Rare":1,"Ore":0},{"group":"ForestStream","area":"Overgrowth","spots":["Forest"],"every":20,"max":3,"Common":4,"Uncommon":2,"Rare":2,"Ore":0},{"group":"ForestBamboo","area":"Bamboo Forest","spots":["Bamboo"],"every":20,"max":3,"Common":3,"Uncommon":3,"Rare":2,"Ore":0},{"group":"Grove","area":"The Grove","spots":["Grove"],"every":15,"max":12,"Common":9,"Uncommon":7,"Rare":4,"Ore":0},{"group":"SecretCave","area":"Secret Lake","spots":["Cave"],"every":15,"max":7,"Common":11,"Uncommon":11,"Rare":9,"Ore":11}];
+{
+  const tiers = ["Common", "Uncommon", "Rare", "Ore"];
+  const name = g => g.replace(/([a-z])([A-Z])/g, "$1 $2");
+  let t = `<tr><th>Area</th><th>Spawn group</th>${tiers.map(x => `<th style="color:var(--${x.toLowerCase()})">${x}</th>`).join("")}<th>Total</th><th>New spot every</th><th>Max up</th><th>Rare share</th></tr>`;
+  let last = "";
+  SPAWN_GROUPS.forEach(g => {
+    const total = tiers.reduce((a, x) => a + g[x], 0);
+    const share = g.Rare / total;
+    const first = g.area !== last; last = g.area;
+    t += `<tr class="${first ? "area-start" : ""}"><td>${first ? esc(g.area) : ""}</td>`
+      + `<td>${esc(name(g.group))}<span class="sub">${g.spots.map(s => esc(name(s))).join(" + ")} spots</span></td>`
+      + tiers.map(x => `<td class="n${g[x] ? "" : " zero"}" style="${g[x] ? `color:var(--${x.toLowerCase()})` : ""}">${g[x]}</td>`).join("")
+      + `<td class="n">${total}</td><td class="n">${g.every} s</td><td class="n">${g.max}</td>`
+      + `<td><span class="bar-rare" style="width:${Math.round(share * 80)}px"></span>${Math.round(share * 100)}%</td></tr>`;
+  });
+  document.getElementById("spawn").innerHTML = t;
+}
 
 // quest spots
 const quest = document.getElementById("quest");
